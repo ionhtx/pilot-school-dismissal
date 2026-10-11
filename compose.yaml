@@ -11,11 +11,7 @@ services:
     volumes:
       - openhall-postgres:/var/lib/postgresql
     healthcheck:
-      test:
-        [
-          'CMD-SHELL',
-          'pg_isready -U ${POSTGRES_USER:-openhall} -d ${POSTGRES_DB:-openhall}',
-        ]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-openhall} -d ${POSTGRES_DB:-openhall}']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -28,6 +24,8 @@ services:
       APP_BASE_URL: ${APP_BASE_URL}
       DATABASE_URL: postgresql://${POSTGRES_USER:-openhall}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-openhall}
       APP_SECRET: ${APP_SECRET}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
       DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
       DATA_ENCRYPTION_KEY_ID: ${DATA_ENCRYPTION_KEY_ID:-production-key-1}
       TRUST_PROXY: ${TRUST_PROXY:-true}
@@ -49,4 +47,3 @@ services:
 
 volumes:
   openhall-postgres:
-

@@ -21,6 +21,9 @@ export interface AppConfig {
   readonly dataEncryptionKeyId: string;
   readonly trustProxy: boolean;
   readonly port: number;
+  /** Resend is optional at process start so operators can run migrations first. */
+  readonly resendApiKey?: string | null;
+  readonly resendFromEmail?: string | null;
   /** Explicit local-only product demo switch. Never inferred from NODE_ENV. */
   readonly demoMode?: boolean;
 }
@@ -207,6 +210,9 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     throw new ConfigError(issues);
   }
 
+  const resendApiKeyValue = environment.RESEND_API_KEY?.trim();
+  const resendFromEmailValue = environment.RESEND_FROM_EMAIL?.trim();
+
   return {
     nodeEnv,
     appBaseUrl,
@@ -217,6 +223,9 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): AppCon
     dataEncryptionKeyId,
     trustProxy: trustProxyValue === 'true',
     port,
+    resendApiKey: resendApiKeyValue && resendApiKeyValue.length > 0 ? resendApiKeyValue : null,
+    resendFromEmail:
+      resendFromEmailValue && resendFromEmailValue.length > 0 ? resendFromEmailValue : null,
     demoMode,
   };
 }

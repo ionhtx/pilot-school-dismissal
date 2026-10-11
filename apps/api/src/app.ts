@@ -18,6 +18,7 @@ import { registerSessionContext } from './auth/session-context.js';
 import { startDestinationFlowWorker } from './destination-flow/reconciler-runner.js';
 import { carriedStatus, safeRequestPath, scrubForLog } from './http-privacy.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerEmailAuthRoutes } from './routes/email-auth.js';
 import { registerBootstrapRoutes } from './routes/bootstrap.js';
 import { registerSetupRoutes } from './routes/setup.js';
 import { registerControlPlaneRoutes } from './routes/control-plane.js';
@@ -288,6 +289,7 @@ export async function createApp(options: CreateAppOptions): Promise<FastifyInsta
   registerHealthRoutes(typedApp, options.readinessProbe);
   registerSystemRoutes(typedApp);
   registerAuthRoutes(typedApp, dependencies);
+  registerEmailAuthRoutes(typedApp, dependencies);
   if (options.config.demoMode === true) registerDemoRoutes(typedApp, dependencies);
   registerBootstrapRoutes(typedApp, dependencies);
   registerSetupRoutes(typedApp, dependencies);

@@ -206,6 +206,28 @@ export interface DestinationReservation {
   tenant_id: string;
 }
 
+export interface EmailAuthTransaction {
+  account_id: string | null;
+  admin_display_name: string | null;
+  admin_family_name: string | null;
+  admin_given_name: string | null;
+  consumed_at: string | null;
+  created_at: Generated<string>;
+  email_display: string;
+  email_normalized: string;
+  expires_at: string;
+  id: Generated<string>;
+  purpose: string;
+  revoked_at: string | null;
+  school_name: string | null;
+  school_slug: string | null;
+  school_time_zone: string | null;
+  tenant_id: string | null;
+  tenant_name: string | null;
+  tenant_slug: string | null;
+  token_hash: Buffer;
+}
+
 export interface ExternalReference {
   canonical_entity_id: string;
   entity_kind: string;
@@ -675,6 +697,7 @@ export interface DB {
   destination: Destination;
   destination_category: DestinationCategory;
   destination_reservation: DestinationReservation;
+  email_auth_transaction: EmailAuthTransaction;
   external_reference: ExternalReference;
   idempotency_record: IdempotencyRecord;
   identity_enrollment_grant: IdentityEnrollmentGrant;

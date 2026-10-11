@@ -4,6 +4,7 @@ import {
   PostgresBootstrapFinalizer,
   PostgresBootstrapRepository,
   PostgresEnrollmentRepository,
+  PostgresEmailAuthTransactionStore,
   PostgresIdentityDirectory,
   PostgresOidcTransactionStore,
   PostgresOperatorGrantStore,
@@ -26,6 +27,7 @@ import {
   NodeSha256Hasher,
 } from './crypto.js';
 import { OpenIdClientAdapter } from './oidc-adapter.js';
+import { ResendMagicLinkSender } from './magic-link-sender.js';
 
 /** Exact OIDC callback path derived from APP_BASE_URL, never from headers. */
 export function oidcCallbackUrl(config: AppConfig): string {
@@ -58,6 +60,8 @@ export interface AuthDependencies {
   readonly isProduction: boolean;
   /** Bare origin of APP_BASE_URL; the only accepted request origin. */
   readonly origin: string;
+  readonly emailTransactions: PostgresEmailAuthTransactionStore;
+  readonly magicLinkSender: ResendMagicLinkSender;
 }
 
 /**
@@ -103,6 +107,11 @@ export function createAuthDependencies(
     allowInsecureHttp: config.nodeEnv !== 'production',
     isProduction: config.nodeEnv === 'production',
     origin: config.appBaseUrl.origin,
+    emailTransactions: new PostgresEmailAuthTransactionStore(database),
+    magicLinkSender: new ResendMagicLinkSender(
+      config.resendApiKey ?? null,
+      config.resendFromEmail ?? null,
+    ),
   };
 }
 

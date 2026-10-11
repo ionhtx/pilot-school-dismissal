@@ -38,7 +38,7 @@ export const SESSION_POLICY = {
 
 export function sessionExpiry(
   authenticatedAt: Temporal.Instant,
-  authenticationMethod: 'oidc' | 'recovery' | 'setup' | boolean,
+  authenticationMethod: 'oidc' | 'recovery' | 'setup' | 'email' | boolean,
 ): { readonly idleExpiresAt: Temporal.Instant; readonly absoluteExpiresAt: Temporal.Instant } {
   const method =
     typeof authenticationMethod === 'boolean'

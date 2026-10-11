@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, Outlet, useLoaderData } from 'react-router';
+import { createBrowserRouter, Navigate, useLoaderData } from 'react-router';
 import { ErrorPage } from './ErrorPage';
 import {
   connectSignInLoader,
@@ -13,18 +13,7 @@ import {
 import { LoginPage, RecoveryPage, EnrollPage } from './auth/AuthPages';
 import { ConnectSignInPage } from '../features/auth/ConnectSignInPage';
 import { RecoveryAccessPage } from '../features/auth/RecoveryAccessPage';
-import { RequireSetupToken } from '../features/setup/RequireSetupToken';
-import { SetupProvider } from '../features/setup/setup-state';
-import { SetupWelcome } from '../features/setup/SetupWelcome';
-import { GuidedSetupFlow } from '../features/setup/GuidedSetupFlow';
-
-function SetupShell() {
-  return (
-    <SetupProvider>
-      <Outlet />
-    </SetupProvider>
-  );
-}
+import { EmailVerificationPage, SignupPage } from './auth/EmailAuthPages';
 import { SchoolChooser } from './school/SchoolChooser';
 import { SchoolIndex } from './school/SchoolIndex';
 import { SchoolShell } from './school/SchoolShell';
@@ -58,20 +47,10 @@ export const router = createBrowserRouter([
   {
     path: '/setup',
     loader: setupLoader,
-    element: <SetupShell />,
-    errorElement: <ErrorPage />,
-    children: [
-      { index: true, element: <SetupWelcome /> },
-      {
-        path: 'flow',
-        element: (
-          <RequireSetupToken>
-            <GuidedSetupFlow />
-          </RequireSetupToken>
-        ),
-      },
-    ],
+    element: <Navigate replace to="/signup" />,
   },
+  { path: '/signup', element: <SignupPage />, errorElement: <ErrorPage /> },
+  { path: '/email/verify', element: <EmailVerificationPage />, errorElement: <ErrorPage /> },
   {
     path: '/connect-sign-in',
     loader: connectSignInLoader,

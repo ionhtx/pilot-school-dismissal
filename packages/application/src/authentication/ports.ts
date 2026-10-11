@@ -63,7 +63,7 @@ export interface SecretProtector {
   reveal(secret: ProtectedSecret, context: string): string;
 }
 
-export type AuthenticationMethod = 'oidc' | 'recovery' | 'setup';
+export type AuthenticationMethod = 'oidc' | 'recovery' | 'setup' | 'email';
 
 export interface SessionRecord {
   readonly id: string;
@@ -518,6 +518,66 @@ export interface BaseBootstrapFinalizer {
       readonly requestId: string;
     },
   ): Promise<BootstrapInstallation>;
+}
+
+export interface EmailAuthTransactionRecord {
+  readonly id: string;
+  readonly purpose: 'signup' | 'signin';
+  readonly emailNormalized: string;
+  readonly tenantId: TenantId | null;
+  readonly accountId: AccountId | null;
+  readonly expiresAt: Temporal.Instant;
+  readonly consumedAt: Temporal.Instant | null;
+  readonly revokedAt: Temporal.Instant | null;
+}
+
+export interface EmailAuthTransactionStore {
+  /** System lookup is deliberately limited to the platform-owned email issuer. */
+  findMagicLinkIdentity(
+    emailNormalized: string,
+  ): Promise<{ readonly tenantId: TenantId; readonly accountId: AccountId } | undefined>;
+  createSignup(
+    context: SystemTransactionContext,
+    input: BaseBootstrapInput & {
+      readonly emailNormalized: string;
+      readonly emailDisplay: string;
+      readonly tokenDigest: Uint8Array;
+      readonly expiresAt: Temporal.Instant;
+    },
+  ): Promise<EmailAuthTransactionRecord>;
+  createSignin(
+    context: SystemTransactionContext,
+    input: {
+      readonly emailNormalized: string;
+      readonly emailDisplay: string;
+      readonly tenantId: TenantId;
+      readonly accountId: AccountId;
+      readonly tokenDigest: Uint8Array;
+      readonly expiresAt: Temporal.Instant;
+    },
+  ): Promise<EmailAuthTransactionRecord>;
+  /**
+   * Atomically consumes a live link, creates a tenant for signup when needed,
+   * and issues a normal email-authenticated session.
+   */
+  complete(
+    context: SystemTransactionContext,
+    input: {
+      readonly tokenDigest: Uint8Array;
+      readonly sessionTokenDigest: Uint8Array;
+      readonly csrfTokenDigest: Uint8Array;
+      readonly now: Temporal.Instant;
+      readonly requestId: string;
+    },
+  ): Promise<BootstrapInstallation>;
+}
+
+export interface MagicLinkSender {
+  send(input: {
+    readonly to: string;
+    readonly verificationUrl: string;
+    readonly purpose: 'signup' | 'signin';
+  }): Promise<void>;
 }
 
 /**

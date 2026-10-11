@@ -1,6 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import {
   AuthenticationError,
+  EMAIL_AUTH_ISSUER,
   SESSION_POLICY,
   type AccountRecord,
   type AuditEventInput,
@@ -13,6 +14,8 @@ import {
   type BootstrapInstallation,
   type BootstrapRepository,
   type BootstrapSetupRecord,
+  type EmailAuthTransactionRecord,
+  type EmailAuthTransactionStore,
   type IdentityDirectory,
   type IdentityProviderRecord,
   type NewSession,
@@ -89,7 +92,9 @@ function mapSession(row: {
         ? 'recovery'
         : row.authentication_method === 'setup'
           ? 'setup'
-          : 'oidc',
+          : row.authentication_method === 'email'
+            ? 'email'
+            : 'oidc',
     createdAt: fromDatabaseInstant(row.created_at),
     authenticatedAt: fromDatabaseInstant(row.authenticated_at),
     lastSeenAt: fromDatabaseInstant(row.last_seen_at),
@@ -97,6 +102,28 @@ function mapSession(row: {
     absoluteExpiresAt: fromDatabaseInstant(row.absolute_expires_at),
     revokedAt: row.revoked_at === null ? null : fromDatabaseInstant(row.revoked_at),
     revocationReason: row.revocation_reason,
+  };
+}
+
+function mapEmailAuthTransaction(row: {
+  id: string;
+  purpose: string;
+  email_normalized: string;
+  tenant_id: string | null;
+  account_id: string | null;
+  expires_at: string;
+  consumed_at: string | null;
+  revoked_at: string | null;
+}): EmailAuthTransactionRecord {
+  return {
+    id: row.id,
+    purpose: row.purpose === 'signin' ? 'signin' : 'signup',
+    emailNormalized: row.email_normalized,
+    tenantId: row.tenant_id,
+    accountId: row.account_id,
+    expiresAt: fromDatabaseInstant(row.expires_at),
+    consumedAt: row.consumed_at === null ? null : fromDatabaseInstant(row.consumed_at),
+    revokedAt: row.revoked_at === null ? null : fromDatabaseInstant(row.revoked_at),
   };
 }
 
@@ -1634,6 +1661,371 @@ export class PostgresProviderSetupFinalizer implements ProviderSetupFinalizer {
             'School sign-in is already connected',
           );
         }
+      }
+      throw error;
+    }
+  }
+}
+
+/**
+ * Platform-owned email authentication. All pre-authentication lookups are
+ * constrained to the dedicated magic-link issuer; completion is one system
+ * transaction so a link can never create two tenants or two sessions.
+ */
+export class PostgresEmailAuthTransactionStore implements EmailAuthTransactionStore {
+  constructor(private readonly database: Kysely<Database>) {}
+
+  async findMagicLinkIdentity(
+    emailNormalized: string,
+  ): Promise<{ readonly tenantId: string; readonly accountId: string } | undefined> {
+    const row = await this.database
+      .selectFrom('auth_identity')
+      .innerJoin('tenant', 'tenant.id', 'auth_identity.tenant_id')
+      .innerJoin('account', (join) =>
+        join
+          .onRef('account.tenant_id', '=', 'auth_identity.tenant_id')
+          .onRef('account.id', '=', 'auth_identity.account_id'),
+      )
+      .select(['auth_identity.tenant_id', 'auth_identity.account_id'])
+      .where('auth_identity.issuer', '=', EMAIL_AUTH_ISSUER)
+      .where('auth_identity.provider_subject', '=', emailNormalized)
+      .where('tenant.status', '=', 'active')
+      .where('account.status', '=', 'active')
+      .executeTakeFirst();
+    return row === undefined ? undefined : { tenantId: row.tenant_id, accountId: row.account_id };
+  }
+
+  async createSignup(
+    context: SystemTransactionContext,
+    input: BaseBootstrapInput & {
+      readonly emailNormalized: string;
+      readonly emailDisplay: string;
+      readonly tokenDigest: Uint8Array;
+      readonly expiresAt: Temporal.Instant;
+    },
+  ): Promise<EmailAuthTransactionRecord> {
+    const connection = connectionFor(context);
+    await connection
+      .updateTable('email_auth_transaction')
+      .set({ revoked_at: sql`statement_timestamp()` })
+      .where('email_normalized', '=', input.emailNormalized)
+      .where('purpose', '=', 'signup')
+      .where('consumed_at', 'is', null)
+      .where('revoked_at', 'is', null)
+      .execute();
+    const row = await connection
+      .insertInto('email_auth_transaction')
+      .values({
+        purpose: 'signup',
+        token_hash: toDatabaseBytes(input.tokenDigest),
+        email_normalized: input.emailNormalized,
+        email_display: input.emailDisplay,
+        tenant_id: null,
+        account_id: null,
+        tenant_name: input.tenantName,
+        tenant_slug: input.tenantSlug,
+        school_name: input.schoolName,
+        school_slug: input.schoolSlug,
+        school_time_zone: input.schoolTimeZone,
+        admin_given_name: input.adminGivenName,
+        admin_family_name: input.adminFamilyName,
+        admin_display_name: input.adminDisplayName,
+        expires_at: toDatabaseInstant(input.expiresAt),
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    return mapEmailAuthTransaction(row);
+  }
+
+  async createSignin(
+    context: SystemTransactionContext,
+    input: {
+      readonly emailNormalized: string;
+      readonly emailDisplay: string;
+      readonly tenantId: string;
+      readonly accountId: string;
+      readonly tokenDigest: Uint8Array;
+      readonly expiresAt: Temporal.Instant;
+    },
+  ): Promise<EmailAuthTransactionRecord> {
+    const connection = connectionFor(context);
+    await connection
+      .updateTable('email_auth_transaction')
+      .set({ revoked_at: sql`statement_timestamp()` })
+      .where('email_normalized', '=', input.emailNormalized)
+      .where('purpose', '=', 'signin')
+      .where('consumed_at', 'is', null)
+      .where('revoked_at', 'is', null)
+      .execute();
+    const row = await connection
+      .insertInto('email_auth_transaction')
+      .values({
+        purpose: 'signin',
+        token_hash: toDatabaseBytes(input.tokenDigest),
+        email_normalized: input.emailNormalized,
+        email_display: input.emailDisplay,
+        tenant_id: input.tenantId,
+        account_id: input.accountId,
+        tenant_name: null,
+        tenant_slug: null,
+        school_name: null,
+        school_slug: null,
+        school_time_zone: null,
+        admin_given_name: null,
+        admin_family_name: null,
+        admin_display_name: null,
+        expires_at: toDatabaseInstant(input.expiresAt),
+      })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    return mapEmailAuthTransaction(row);
+  }
+
+  async complete(
+    context: SystemTransactionContext,
+    input: {
+      readonly tokenDigest: Uint8Array;
+      readonly sessionTokenDigest: Uint8Array;
+      readonly csrfTokenDigest: Uint8Array;
+      readonly now: Temporal.Instant;
+      readonly requestId: string;
+    },
+  ): Promise<BootstrapInstallation> {
+    const connection = connectionFor(context);
+    const nowText = toDatabaseInstant(input.now);
+    const challenge = await connection
+      .selectFrom('email_auth_transaction')
+      .selectAll()
+      .where('token_hash', '=', toDatabaseBytes(input.tokenDigest))
+      .where('consumed_at', 'is', null)
+      .where('revoked_at', 'is', null)
+      .where('expires_at', '>', nowText)
+      .forUpdate()
+      .executeTakeFirst();
+    if (challenge === undefined) {
+      throw new AuthenticationError('email_auth_token_invalid');
+    }
+
+    await sql`SELECT pg_advisory_xact_lock(hashtext('waypass:email-auth'), hashtext(${challenge.email_normalized}))`.execute(
+      connection,
+    );
+
+    try {
+      let tenant: {
+        id: string;
+        slug: string;
+        name: string;
+        status: string;
+        created_at: string;
+        updated_at: string;
+      };
+      let account: {
+        id: string;
+        person_id: string;
+        session_revision: string | bigint | number;
+      };
+
+      if (challenge.purpose === 'signup') {
+        const existingIdentity = await connection
+          .selectFrom('auth_identity')
+          .select('id')
+          .where('issuer', '=', EMAIL_AUTH_ISSUER)
+          .where('provider_subject', '=', challenge.email_normalized)
+          .executeTakeFirst();
+        if (existingIdentity !== undefined) {
+          throw new AuthenticationError('email_auth_conflict');
+        }
+        if (
+          challenge.tenant_name === null ||
+          challenge.tenant_slug === null ||
+          challenge.school_name === null ||
+          challenge.school_slug === null ||
+          challenge.school_time_zone === null ||
+          challenge.admin_given_name === null ||
+          challenge.admin_family_name === null ||
+          challenge.admin_display_name === null
+        ) {
+          throw new AuthenticationError('email_auth_token_invalid');
+        }
+        tenant = await connection
+          .insertInto('tenant')
+          .values({
+            name: challenge.tenant_name,
+            slug: challenge.tenant_slug,
+            status: 'active',
+          })
+          .returningAll()
+          .executeTakeFirstOrThrow();
+        const school = await connection
+          .insertInto('organization')
+          .values({
+            tenant_id: tenant.id,
+            kind: 'school',
+            name: challenge.school_name,
+            slug: challenge.school_slug,
+            time_zone: challenge.school_time_zone,
+            status: 'active',
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        await connection
+          .insertInto('school_schedule_configuration')
+          .values({ tenant_id: tenant.id, organization_id: school.id })
+          .execute();
+        const person = await connection
+          .insertInto('person')
+          .values({
+            tenant_id: tenant.id,
+            given_name: challenge.admin_given_name,
+            family_name: challenge.admin_family_name,
+            display_name: challenge.admin_display_name,
+            status: 'active',
+          })
+          .returning('id')
+          .executeTakeFirstOrThrow();
+        account = await connection
+          .insertInto('account')
+          .values({ tenant_id: tenant.id, person_id: person.id, status: 'active' })
+          .returning(['id', 'person_id', 'session_revision'])
+          .executeTakeFirstOrThrow();
+        await connection
+          .insertInto('organization_membership')
+          .values({
+            tenant_id: tenant.id,
+            organization_id: school.id,
+            person_id: person.id,
+            affiliation: 'staff',
+            status: 'active',
+          })
+          .execute();
+        await connection
+          .insertInto('authorization_grant')
+          .values({
+            tenant_id: tenant.id,
+            account_id: account.id,
+            role: 'system_admin',
+            scope_kind: 'tenant',
+            status: 'active',
+          })
+          .execute();
+        await connection
+          .insertInto('auth_identity')
+          .values({
+            tenant_id: tenant.id,
+            account_id: account.id,
+            issuer: EMAIL_AUTH_ISSUER,
+            provider_subject: challenge.email_normalized,
+            email_snapshot: challenge.email_display,
+          })
+          .execute();
+      } else {
+        if (challenge.tenant_id === null || challenge.account_id === null) {
+          throw new AuthenticationError('email_auth_token_invalid');
+        }
+        const identity = await connection
+          .selectFrom('auth_identity')
+          .select(['tenant_id', 'account_id'])
+          .where('issuer', '=', EMAIL_AUTH_ISSUER)
+          .where('provider_subject', '=', challenge.email_normalized)
+          .executeTakeFirst();
+        if (
+          identity?.tenant_id !== challenge.tenant_id ||
+          identity.account_id !== challenge.account_id
+        ) {
+          throw new AuthenticationError('email_auth_token_invalid');
+        }
+        tenant = await connection
+          .selectFrom('tenant')
+          .selectAll()
+          .where('id', '=', challenge.tenant_id)
+          .where('status', '=', 'active')
+          .executeTakeFirstOrThrow();
+        account = await connection
+          .selectFrom('account')
+          .select(['id', 'person_id', 'session_revision'])
+          .where('tenant_id', '=', challenge.tenant_id)
+          .where('id', '=', challenge.account_id)
+          .where('status', '=', 'active')
+          .executeTakeFirstOrThrow();
+        const activePerson = await connection
+          .selectFrom('person')
+          .select('id')
+          .where('tenant_id', '=', tenant.id)
+          .where('id', '=', account.person_id)
+          .where('status', '=', 'active')
+          .executeTakeFirst();
+        if (activePerson === undefined) {
+          throw new AuthenticationError('email_auth_token_invalid');
+        }
+      }
+
+      const session = await connection
+        .insertInto('auth_session')
+        .values({
+          tenant_id: tenant.id,
+          account_id: account.id,
+          identity_provider_id: null,
+          token_hash: toDatabaseBytes(input.sessionTokenDigest),
+          csrf_token_hash: toDatabaseBytes(input.csrfTokenDigest),
+          account_session_revision: toBigInt(account.session_revision),
+          authentication_method: 'email',
+          authenticated_at: nowText,
+          idle_expires_at: toDatabaseInstant(
+            input.now.add({ seconds: SESSION_POLICY.idleTtlSeconds }),
+          ),
+          absolute_expires_at: toDatabaseInstant(
+            input.now.add({ seconds: SESSION_POLICY.absoluteTtlSeconds }),
+          ),
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+      await connection
+        .updateTable('email_auth_transaction')
+        .set({ consumed_at: nowText })
+        .where('id', '=', challenge.id)
+        .where('consumed_at', 'is', null)
+        .executeTakeFirstOrThrow();
+      await connection
+        .updateTable('email_auth_transaction')
+        .set({ revoked_at: nowText })
+        .where('email_normalized', '=', challenge.email_normalized)
+        .where('id', '!=', challenge.id)
+        .where('consumed_at', 'is', null)
+        .where('revoked_at', 'is', null)
+        .execute();
+      await connection
+        .insertInto('audit_event')
+        .values({
+          tenant_id: tenant.id,
+          actor_kind: 'account',
+          actor_id: account.id,
+          action:
+            challenge.purpose === 'signup'
+              ? 'auth.self_service_signup_completed'
+              : 'auth.sign_in_succeeded',
+          target_kind: challenge.purpose === 'signup' ? 'tenant' : 'auth_session',
+          target_id: challenge.purpose === 'signup' ? tenant.id : session.id,
+          outcome: 'success',
+          occurred_at: nowText,
+          request_id: input.requestId,
+          metadata: {},
+        })
+        .execute();
+      return {
+        tenant: mapTenant(tenant),
+        accountId: account.id,
+        personId: account.person_id,
+        session: mapSession(session),
+      };
+    } catch (error) {
+      if (error instanceof AuthenticationError) throw error;
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === '23505'
+      ) {
+        throw new AuthenticationError('email_auth_conflict');
       }
       throw error;
     }

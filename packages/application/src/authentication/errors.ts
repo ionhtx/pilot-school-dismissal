@@ -18,7 +18,10 @@ export type AuthErrorCode =
   | 'invalid_bootstrap_draft'
   | 'recovery_token_invalid'
   | 'provider_configuration_unsupported'
-  | 'provider_setup_conflict';
+  | 'provider_setup_conflict'
+  | 'email_auth_token_invalid'
+  | 'email_auth_conflict'
+  | 'invalid_signup_details';
 
 export class AuthenticationError extends Error {
   readonly code: AuthErrorCode;

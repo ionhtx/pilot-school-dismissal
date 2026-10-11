@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
+import { EmailSigninForm } from './EmailAuthPages';
 
 export function LoginPage() {
   const [search] = useSearchParams();
@@ -38,6 +39,7 @@ export function LoginPage() {
             <CardDescription>Use the account your school provided.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
+            <EmailSigninForm />
             {error && (
               <Alert variant="destructive" role="alert">
                 <AlertTitle>

@@ -18,8 +18,6 @@ function safeReturnPath(request: Request): string {
 }
 
 export async function indexLoader() {
-  const bootstrap = await queryClient.query(bootstrapQuery);
-  if (!bootstrap.initialized) throw redirect('/setup');
   const session = await queryClient.query(sessionQuery);
   if (!session.authenticated) throw redirect('/login');
   if (session.authenticationMethod === 'recovery') throw redirect('/recovery');
@@ -30,10 +28,8 @@ export async function indexLoader() {
   throw redirect('/schools');
 }
 
-export async function setupLoader() {
-  const bootstrap = await queryClient.query(bootstrapQuery);
-  if (bootstrap.initialized) throw redirect('/');
-  return null;
+export function setupLoader() {
+  throw redirect('/signup');
 }
 
 export async function connectSignInLoader({ request }: LoaderFunctionArgs) {
@@ -58,8 +54,6 @@ export async function recoveryAccessLoader() {
 }
 
 export async function loginLoader() {
-  const bootstrap = await queryClient.query(bootstrapQuery);
-  if (!bootstrap.initialized) throw redirect('/setup');
   const session = await queryClient.query(sessionQuery);
   if (session.authenticated)
     throw redirect(session.authenticationMethod === 'recovery' ? '/recovery' : '/');

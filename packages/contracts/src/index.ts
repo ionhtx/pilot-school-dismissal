@@ -54,6 +54,7 @@ export const AuthSessionSchema = Type.Union(
           Type.Literal('oidc'),
           Type.Literal('recovery'),
           Type.Literal('setup'),
+          Type.Literal('email'),
         ]),
       },
       { additionalProperties: false },
@@ -118,6 +119,38 @@ export const AuthDiscoverySchema = Type.Union(
 export const BootstrapStatusSchema = Type.Object(
   { initialized: Type.Boolean() },
   { $id: 'BootstrapStatus' },
+);
+
+const EmailAddressSchema = Type.String({ minLength: 5, maxLength: 254 });
+
+export const EmailSignupRequestSchema = Type.Object(
+  {
+    email: EmailAddressSchema,
+    schoolName: Type.String({ minLength: 1, maxLength: 200 }),
+    schoolTimeZone: Type.String({ minLength: 1, maxLength: 100 }),
+    adminGivenName: Type.String({ minLength: 1, maxLength: 200 }),
+    adminFamilyName: Type.String({ minLength: 1, maxLength: 200 }),
+  },
+  { $id: 'EmailSignupRequest', additionalProperties: false },
+);
+
+export const EmailSigninRequestSchema = Type.Object(
+  { email: EmailAddressSchema },
+  { $id: 'EmailSigninRequest', additionalProperties: false },
+);
+
+export const EmailAuthAcceptedSchema = Type.Object(
+  { accepted: Type.Literal(true) },
+  { $id: 'EmailAuthAccepted', additionalProperties: false },
+);
+
+export const EmailAuthCompleteResponseSchema = Type.Object(
+  {
+    authenticated: Type.Literal(true),
+    authenticationMethod: Type.Literal('email'),
+    absoluteExpiresAt: InstantSchema,
+  },
+  { $id: 'EmailAuthCompleteResponse', additionalProperties: false },
 );
 
 export const BootstrapPrepareSchema = Type.Object(

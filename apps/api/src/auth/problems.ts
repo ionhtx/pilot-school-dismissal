@@ -17,6 +17,9 @@ const STATUS_BY_CODE: Record<AuthErrorCode, number> = {
   recovery_token_invalid: 401,
   provider_configuration_unsupported: 400,
   provider_setup_conflict: 409,
+  email_auth_token_invalid: 401,
+  email_auth_conflict: 409,
+  invalid_signup_details: 400,
 };
 
 const TITLE_BY_CODE: Record<AuthErrorCode, string> = {
@@ -34,6 +37,9 @@ const TITLE_BY_CODE: Record<AuthErrorCode, string> = {
   recovery_token_invalid: 'Invalid recovery token',
   provider_configuration_unsupported: 'Unsupported provider configuration',
   provider_setup_conflict: 'School sign-in is already connected',
+  email_auth_token_invalid: 'Invalid or expired email link',
+  email_auth_conflict: 'Email or school already registered',
+  invalid_signup_details: 'Invalid signup details',
 };
 
 export function statusFor(code: AuthErrorCode): number {
