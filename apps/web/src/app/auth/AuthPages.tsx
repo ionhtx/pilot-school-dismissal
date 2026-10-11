@@ -107,14 +107,6 @@ export function LoginPage() {
                 </div>
               </Alert>
             )}
-            {discovery.data?.tenantSelectionRequired && (
-              <Alert>
-                <AlertTitle>Choose your school</AlertTitle>
-                <AlertDescription>
-                  Use your school&apos;s WayPass address to sign in.
-                </AlertDescription>
-              </Alert>
-            )}
           </CardContent>
         </Card>
       </div>
