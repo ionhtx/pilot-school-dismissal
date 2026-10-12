@@ -12,8 +12,17 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
-import { Field, FieldLabel } from '@/components/ui/field';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import {
@@ -39,6 +48,7 @@ export function Component() {
   const queryClient = useQueryClient();
   const [q, setQ] = useState('');
   const [affiliation, setAffiliation] = useState<'student' | 'staff'>('student');
+  const [createOpen, setCreateOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<{ url: string; expiresAt: string } | null>(null);
   const { data: me } = useQuery(meQuery);
@@ -54,6 +64,25 @@ export function Component() {
           },
         }),
       ),
+  });
+  const createPerson = useMutation({
+    mutationFn: (input: {
+      givenName: string;
+      familyName: string;
+      affiliation: 'student' | 'staff';
+      gradeLevel: string | null;
+    }) =>
+      confirmed(
+        api.POST('/api/v1/organizations/{organizationId}/people', {
+          params: { path: { organizationId } },
+          headers: { 'X-CSRF-Token': getCsrfToken() },
+          body: input,
+        }),
+      ),
+    onSuccess: () => {
+      setCreateOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ['people', organizationId] });
+    },
   });
   const discovery = useQuery({
     queryKey: ['provider-catalog', tenantSlug],
@@ -135,6 +164,17 @@ export function Component() {
     const data = new FormData(event.currentTarget);
     setQ(formString(data, 'q'));
   }
+  function create(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const gradeLevel = formString(data, 'gradeLevel').trim();
+    createPerson.mutate({
+      givenName: formString(data, 'givenName'),
+      familyName: formString(data, 'familyName'),
+      affiliation: formString(data, 'affiliation') as 'student' | 'staff',
+      gradeLevel: gradeLevel || null,
+    });
+  }
   function closeSheet(open: boolean) {
     if (!open) {
       setSelected(null);
@@ -150,8 +190,65 @@ export function Component() {
     <section className="grid gap-6">
       <PageHeader
         title="People"
-        description="Find people and manage sign-in invitations. School records remain read-only here."
+        description="Add students and staff, then manage sign-in invitations when needed."
+        actions={<Button onClick={() => setCreateOpen(true)}>Add person</Button>}
       />
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+        }}
+      >
+        <DialogContent>
+          <form className="grid gap-4" onSubmit={create}>
+            <DialogHeader>
+              <DialogTitle>Add person</DialogTitle>
+              <DialogDescription>
+                Create a student or staff record for this school.
+              </DialogDescription>
+            </DialogHeader>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="person-given-name">First name</FieldLabel>
+                <Input id="person-given-name" name="givenName" required autoComplete="off" />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="person-family-name">Last name</FieldLabel>
+                <Input id="person-family-name" name="familyName" required autoComplete="off" />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="person-affiliation">Group</FieldLabel>
+                <NativeSelect id="person-affiliation" name="affiliation" defaultValue="student">
+                  <option value="student">Student</option>
+                  <option value="staff">Staff</option>
+                </NativeSelect>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="person-grade">Grade</FieldLabel>
+                <Input
+                  id="person-grade"
+                  name="gradeLevel"
+                  placeholder="Optional"
+                  autoComplete="off"
+                />
+              </Field>
+            </FieldGroup>
+            {createPerson.error && (
+              <Alert variant="destructive">
+                <AlertTitle>Person not created</AlertTitle>
+                <AlertDescription>{productMessage(createPerson.error)}</AlertDescription>
+              </Alert>
+            )}
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+              <Button type="submit" disabled={createPerson.isPending}>
+                {createPerson.isPending ? <Spinner data-icon="inline-start" /> : null}
+                {createPerson.isPending ? 'Creating…' : 'Add person'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
       <Card>
         <CardContent className="pt-6">
           <form className="grid gap-4 sm:grid-cols-[1fr_12rem_auto] sm:items-end" onSubmit={search}>
@@ -339,3 +436,4 @@ export function Component() {
     </section>
   );
 }
+

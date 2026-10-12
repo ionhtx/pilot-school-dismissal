@@ -41,6 +41,15 @@ export interface PeopleSearchResult {
   readonly nextCursor: string | null;
 }
 
+export interface CreateOrganizationPersonInput {
+  readonly principal: Principal;
+  readonly organizationId: string;
+  readonly givenName: string;
+  readonly familyName: string;
+  readonly affiliation: 'student' | 'staff';
+  readonly gradeLevel: string | null;
+}
+
 export interface SectionSearchQuery {
   readonly q: string | null;
   readonly limit: number;
@@ -134,6 +143,45 @@ function cleanQueryText(value: string | null): string | null {
   return trimmed.slice(0, 100);
 }
 
+function requiredName(value: string): string {
+  const cleaned = value.trim().replace(/\s+/g, ' ');
+  if (cleaned.length === 0 || cleaned.length > 100) {
+    throw new ControlPlaneError('invalid_person_state', 'Enter a valid name.');
+  }
+  return cleaned;
+}
+
+export async function createOrganizationPerson(
+  input: CreateOrganizationPersonInput,
+  dependencies: PeopleDependencies,
+): Promise<PersonDirectoryEntry> {
+  const now = dependencies.clock.now();
+  return dependencies.runner.run(input.principal.tenantId, async (context) => {
+    const decision = await dependencies.authorization.decideWithContext(context, {
+      principal: input.principal,
+      capability: 'people.manage',
+      resource: { kind: 'organization', organizationId: input.organizationId },
+      at: now,
+    });
+    if (!decision.allowed) {
+      throw denialToError(decision.reason, 'person_not_found');
+    }
+    const normalizedGradeLevel = input.gradeLevel?.trim();
+    const gradeLevel = normalizedGradeLevel === '' ? null : (normalizedGradeLevel ?? null);
+    if (gradeLevel !== null && gradeLevel.length > 32) {
+      throw new ControlPlaneError('invalid_person_state', 'Enter a valid grade level.');
+    }
+    const row = await dependencies.people.insertPerson(context, {
+      organizationId: input.organizationId,
+      givenName: requiredName(input.givenName),
+      familyName: requiredName(input.familyName),
+      affiliation: input.affiliation,
+      gradeLevel,
+    });
+    return toDirectoryEntry(row);
+  });
+}
+
 /** GET /organizations/:id/people — people.view search over the exact school. */
 export async function searchOrganizationPeople(
   principal: Principal,
@@ -221,3 +269,4 @@ export async function searchOrganizationSections(
     };
   });
 }
+

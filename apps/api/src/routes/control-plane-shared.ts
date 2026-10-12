@@ -49,6 +49,7 @@ export const TITLE_BY_CODE: Record<ControlPlaneErrorCode, string> = {
   scheduled_authorization_expired: 'Scheduled authorization expired',
   invalid_scheduled_authorization_state: 'Invalid scheduled authorization state',
   person_not_found: 'Person not found',
+  invalid_person_state: 'Invalid person',
   section_not_found: 'Section not found',
   invalid_search_cursor: 'Invalid search cursor',
   forbidden: 'Forbidden',
@@ -187,3 +188,4 @@ export interface RegisterControlPlaneOptions {
   readonly controlPlane: ControlPlaneDependencies;
   readonly auth: AuthDependencies;
 }
+

@@ -95,13 +95,13 @@ describe('buildWorkspaceNav', () => {
     expect(isStudentOnly(ctx)).toBe(false);
   });
 
-  it('exposes My WayPass inside the staff shell for mixed student/staff roles', () => {
+  it('exposes My dismissal inside the staff shell for mixed student/staff roles', () => {
     const ctx = context({
       affiliations: ['student', 'staff'],
       capabilities: ['pass.request.self', 'pass.view.school_live'],
     });
     expect(isStudentOnly(ctx)).toBe(false);
-    expect(labels(buildWorkspaceNav(ctx), 'teaching')).toContain('My WayPass');
+    expect(labels(buildWorkspaceNav(ctx), 'teaching')).toContain('My dismissal');
     expect(labels(buildWorkspaceNav(ctx), 'operations')).toContain('Live movement');
   });
 
@@ -166,3 +166,4 @@ describe('buildWorkspaceNav', () => {
     expect(firstAdminRoute(none)).toBeNull();
   });
 });
+

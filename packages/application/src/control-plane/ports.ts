@@ -722,6 +722,14 @@ export interface PersonSearchInput {
   readonly cursor: PersonSearchCursor | null;
 }
 
+export interface NewSchoolPerson {
+  readonly organizationId: string;
+  readonly givenName: string;
+  readonly familyName: string;
+  readonly affiliation: 'student' | 'staff';
+  readonly gradeLevel: string | null;
+}
+
 /** One section choice without membership rosters. */
 export interface SectionChoiceRow {
   readonly id: string;
@@ -741,8 +749,12 @@ export interface SectionSearchInput {
   readonly cursor: SectionSearchCursor | null;
 }
 
-/** Purpose-built read-only directory persistence port (tenant-scoped). */
+/** Purpose-built school directory persistence port (tenant-scoped). */
 export interface PeopleRepository {
+  insertPerson(
+    context: TenantTransactionContext,
+    input: NewSchoolPerson,
+  ): Promise<PersonDirectoryRow>;
   /**
    * Keyset search over the exact school's affiliations, ordered by
    * (display_name, person_id). Returns at most limit + 1 rows so the
@@ -1053,3 +1065,4 @@ export interface AuditRepository {
     input: AuditEventListInput,
   ): Promise<readonly AuditEventRow[]>;
 }
+

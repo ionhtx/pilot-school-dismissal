@@ -37,6 +37,7 @@ export type ControlPlaneErrorCode =
   | 'scheduled_authorization_expired'
   | 'invalid_scheduled_authorization_state'
   | 'person_not_found'
+  | 'invalid_person_state'
   | 'section_not_found'
   | 'invalid_search_cursor'
   | 'forbidden'
@@ -112,3 +113,4 @@ export function controlPlaneHttpStatus(code: ControlPlaneErrorCode): number {
       return 400;
   }
 }
+

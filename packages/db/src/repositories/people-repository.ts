@@ -1,5 +1,6 @@
 import type {
   PeopleRepository,
+  NewSchoolPerson,
   PersonDirectoryRow,
   PersonSearchCursor,
   PersonSearchInput,
@@ -47,6 +48,48 @@ function toDirectoryRow(row: PeopleRow): PersonDirectoryRow {
 
 /** PostgreSQL read-only school directory persistence (tenant-scoped). */
 export class PostgresPeopleRepository implements PeopleRepository {
+  async insertPerson(
+    context: TenantTransactionContext,
+    input: NewSchoolPerson,
+  ): Promise<PersonDirectoryRow> {
+    const connection = connectionFor(context);
+    const displayName = `${input.givenName} ${input.familyName}`;
+    const person = await connection
+      .insertInto('person')
+      .values({
+        tenant_id: context.tenantId,
+        given_name: input.givenName,
+        family_name: input.familyName,
+        display_name: displayName,
+      })
+      .returning(['id', 'given_name', 'family_name', 'display_name', 'status'])
+      .executeTakeFirstOrThrow();
+    const membership = await connection
+      .insertInto('organization_membership')
+      .values({
+        tenant_id: context.tenantId,
+        organization_id: input.organizationId,
+        person_id: person.id,
+        affiliation: input.affiliation,
+        grade_level: input.gradeLevel,
+      })
+      .returning(['affiliation', 'grade_level', 'status'])
+      .executeTakeFirstOrThrow();
+    return {
+      personId: person.id,
+      displayName: person.display_name,
+      givenName: person.given_name,
+      familyName: person.family_name,
+      affiliation: membership.affiliation,
+      gradeLevel: membership.grade_level,
+      personStatus: person.status,
+      membershipStatus: membership.status,
+      accountId: null,
+      accountStatus: null,
+      identityLinked: false,
+    };
+  }
+
   async searchPeople(
     context: TenantTransactionContext,
     organizationId: string,
@@ -175,3 +218,4 @@ export class PostgresPeopleRepository implements PeopleRepository {
     }));
   }
 }
+

@@ -1,9 +1,12 @@
 import {
+  createOrganizationPerson,
   searchOrganizationPeople,
   searchOrganizationSections,
   type Principal,
 } from '@openhall/application';
 import {
+  PersonCreateBodySchema,
+  PersonCreateResponseSchema,
   PeopleSearchQuerySchema,
   PeopleSearchResultSchema,
   SectionSearchQuerySchema,
@@ -12,10 +15,11 @@ import {
 import type { FastifyInstance } from 'fastify';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { AuthDependencies } from '../auth/dependencies.js';
-import { requirePrincipal } from '../auth/session-context.js';
+import { requireCsrf, requirePrincipal } from '../auth/session-context.js';
 import type { ControlPlaneDependencies } from '../control-plane/dependencies.js';
 import {
   CONTROL_PLANE_ERRORS,
+  COOKIE_CSRF_SECURITY,
   COOKIE_SECURITY,
   OrganizationIdParamsSchema,
   unauthenticated,
@@ -31,10 +35,50 @@ function pageLimit(value: number | undefined): number {
 export function registerPeopleRoutes(
   app: FastifyInstance,
   controlPlane: ControlPlaneDependencies,
-  _auth: AuthDependencies,
+  auth: AuthDependencies,
   handle: ControlPlaneHandler,
 ): void {
   const typedApp = app.withTypeProvider<TypeBoxTypeProvider>();
+
+  typedApp.post(
+    '/api/v1/organizations/:organizationId/people',
+    {
+      schema: {
+        operationId: 'createOrganizationPerson',
+        tags: ['control-plane'],
+        description:
+          'Create a student or staff directory record for a school. Requires people.manage. Cache-Control: no-store.',
+        security: COOKIE_CSRF_SECURITY,
+        params: OrganizationIdParamsSchema,
+        body: PersonCreateBodySchema,
+        response: { 201: PersonCreateResponseSchema, ...CONTROL_PLANE_ERRORS },
+      },
+      preValidation: [
+        async (request, reply) => requirePrincipal(request, reply),
+        async (request, reply) => requireCsrf(request, reply, auth),
+      ],
+    },
+    async (request, reply) => {
+      const principal: Principal | undefined = request.principal;
+      if (principal === undefined) return unauthenticated(reply, request);
+      await handle(request, reply, async () => ({
+        body: {
+          person: await createOrganizationPerson(
+            {
+              principal,
+              organizationId: request.params.organizationId,
+              givenName: request.body.givenName,
+              familyName: request.body.familyName,
+              affiliation: request.body.affiliation,
+              gradeLevel: request.body.gradeLevel ?? null,
+            },
+            controlPlane.people,
+          ),
+        },
+        status: 201,
+      }));
+    },
+  );
 
   typedApp.get(
     '/api/v1/organizations/:organizationId/people',
@@ -115,3 +159,4 @@ export function registerPeopleRoutes(
     },
   );
 }
+

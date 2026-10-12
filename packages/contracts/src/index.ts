@@ -1174,6 +1174,21 @@ export const PersonDirectoryEntrySchema = Type.Object(
   { $id: 'PersonDirectoryEntry', additionalProperties: false },
 );
 
+export const PersonCreateBodySchema = Type.Object(
+  {
+    givenName: Type.String({ minLength: 1, maxLength: 100 }),
+    familyName: Type.String({ minLength: 1, maxLength: 100 }),
+    affiliation: Type.Union([Type.Literal('student'), Type.Literal('staff')]),
+    gradeLevel: Type.Optional(Type.Union([Type.String({ maxLength: 32 }), Type.Null()])),
+  },
+  { $id: 'PersonCreateBody', additionalProperties: false },
+);
+
+export const PersonCreateResponseSchema = Type.Object(
+  { person: PersonDirectoryEntrySchema },
+  { $id: 'PersonCreateResponse', additionalProperties: false },
+);
+
 export const PeopleSearchQuerySchema = Type.Object(
   {
     q: Type.Optional(Type.String({ minLength: 1, maxLength: 100 })),
@@ -1689,3 +1704,4 @@ export const DestinationStationViewSchema = Type.Object(
   },
   { $id: 'DestinationStationView', additionalProperties: false },
 );
+
