@@ -30,7 +30,7 @@ export function SchoolIndex() {
     return <Navigate replace to="admin" />;
   return (
     <section className="empty-state">
-      <h1>No WayPass tools assigned</h1>
+      <h1>No Pilot-SD tools assigned</h1>
       <p>Ask a school administrator to review your access.</p>
     </section>
   );

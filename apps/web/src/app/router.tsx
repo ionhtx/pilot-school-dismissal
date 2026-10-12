@@ -41,7 +41,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     loader: indexLoader,
-    element: <p role="status">Opening WayPass…</p>,
+    element: <p role="status">Opening Pilot-SD…</p>,
     errorElement: <ErrorPage />,
   },
   {

@@ -14,7 +14,7 @@ export function ErrorPage() {
   const title =
     isRouteErrorResponse(error) && error.status === 404
       ? 'Page not found'
-      : 'WayPass hit a problem';
+      : 'Pilot-SD hit a problem';
   return (
     <AppFrame>
       <div className="mx-auto grid w-full max-w-md gap-4 py-10">
@@ -27,7 +27,7 @@ export function ErrorPage() {
           </EmptyHeader>
           <EmptyContent>
             <Button nativeButton={false} render={<Link to="/" />}>
-              Return to WayPass
+              Return to Pilot-SD
             </Button>
           </EmptyContent>
         </Empty>

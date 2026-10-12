@@ -14,12 +14,12 @@ export function AppFrame({ children }: { children: ReactNode }) {
   return (
     <main className="app-frame">
       <header className="app-frame__header">
-        <Link className="app-wordmark" to="/" aria-label="WayPass home">
+        <Link className="app-wordmark" to="/" aria-label="Pilot-SD home">
           <span className="app-wordmark__route" aria-hidden="true">
             <i />
             <i />
           </span>
-          <span>WayPass</span>
+          <span>Pilot-SD</span>
         </Link>
         <span className="app-frame__descriptor">School movement, clearly understood</span>
       </header>
@@ -33,7 +33,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
       ) : null}
       <div className="app-frame__body">{children}</div>
       <footer className="app-frame__footer">
-        <span>WayPass</span>
+        <span>Pilot-SD</span>
         <span>Private to your school</span>
       </footer>
     </main>

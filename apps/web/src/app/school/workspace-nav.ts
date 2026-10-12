@@ -52,7 +52,7 @@ export function buildWorkspaceNav(context: OrganizationContext): WorkspaceNavGro
     has(context, 'audit.view');
 
   if (student && staffWorkspace) {
-    teaching.push({ to: 'pass', label: 'My WayPass' });
+    teaching.push({ to: 'pass', label: 'My dismissal' });
   }
 
   if (context.teachingSections.length > 0 || has(context, 'pass.override.resolve.school')) {

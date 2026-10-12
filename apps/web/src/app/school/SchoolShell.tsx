@@ -69,7 +69,7 @@ export interface SchoolOutletContext {
 }
 
 const ITEM_ICONS: Record<string, typeof InboxIcon> = {
-  'My WayPass': Ticket01Icon,
+  'My dismissal': Ticket01Icon,
   Requests: InboxIcon,
   Classes: BookOpen01Icon,
   'Live movement': Activity01Icon,
@@ -198,10 +198,10 @@ function FocusedStudentShell({
       <header className="flex h-14 shrink-0 items-center gap-4 border-b px-4">
         <Link
           to={`/schools/${organizationId}`}
-          aria-label="WayPass home"
+          aria-label="Pilot-SD home"
           className="text-sm font-semibold"
         >
-          WayPass
+          Pilot-SD
         </Link>
         <SchoolSwitcher schoolName={context.organization.name} variant="header" />
         <div className="ml-auto min-w-0">

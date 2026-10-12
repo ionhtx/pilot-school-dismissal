@@ -35,7 +35,7 @@ export function EmailSigninForm() {
       <Alert>
         <AlertTitle>Check your email</AlertTitle>
         <AlertDescription>
-          If that address belongs to a WayPass account, a one-time sign-in link is on its way.
+          If that address belongs to a Pilot-SD account, a one-time sign-in link is on its way.
         </AlertDescription>
       </Alert>
     );
@@ -101,7 +101,7 @@ export function SignupPage() {
       <div className="mx-auto grid w-full max-w-lg gap-4 py-10">
         <Card>
           <CardHeader>
-            <h1 className="text-xl font-semibold tracking-tight">Create your WayPass school</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Create your Pilot-SD school</h1>
             <CardDescription>
               Verify your work email, then start configuring dismissal and student-release
               workflows.
@@ -250,7 +250,7 @@ export function EmailVerificationPage() {
             </h1>
             <CardDescription>
               {state === 'verifying'
-                ? 'WayPass is creating your secure session.'
+                ? 'Pilot-SD is creating your secure session.'
                 : state === 'conflict'
                   ? 'Sign in instead, or use a different school name.'
                   : 'The link may have expired or already been used.'}

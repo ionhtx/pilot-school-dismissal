@@ -155,7 +155,7 @@ export function SchoolSwitcher({
             <SchoolMark name={schoolName} />
             <span className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{schoolName}</span>
-              <span className="truncate text-xs text-muted-foreground">WayPass</span>
+              <span className="truncate text-xs text-muted-foreground">Pilot-SD</span>
             </span>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -174,7 +174,7 @@ export function SchoolSwitcher({
             <SchoolMark name={schoolName} />
             <span className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate font-medium">{schoolName}</span>
-              <span className="truncate text-xs text-muted-foreground">WayPass</span>
+              <span className="truncate text-xs text-muted-foreground">Pilot-SD</span>
             </span>
             <HugeiconsIcon icon={UnfoldMoreIcon} strokeWidth={2} className="ml-auto" />
           </DropdownMenuTrigger>

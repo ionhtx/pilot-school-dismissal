@@ -48,7 +48,7 @@ export function LoginPage() {
                 <AlertDescription>
                   {error === 'identity_not_linked'
                     ? 'Ask your school administrator for a sign-in invitation.'
-                    : 'WayPass could not sign you in. Try again.'}
+                    : 'Pilot-SD could not sign you in. Try again.'}
                 </AlertDescription>
               </Alert>
             )}
@@ -93,7 +93,7 @@ export function LoginPage() {
               <Alert>
                 <AlertTitle>School sign-in hasn&apos;t been connected yet</AlertTitle>
                 <AlertDescription>
-                  An administrator needs to finish WayPass setup for {tenant.name}.
+                  An administrator needs to finish Pilot-SD setup for {tenant.name}.
                 </AlertDescription>
                 <div className="pt-2">
                   <Button
@@ -160,7 +160,7 @@ export function RecoveryPage() {
             {logoutError && (
               <Alert variant="destructive">
                 <AlertTitle>Sign out not confirmed</AlertTitle>
-                <AlertDescription>WayPass could not reach the server. Try again.</AlertDescription>
+                <AlertDescription>Pilot-SD could not reach the server. Try again.</AlertDescription>
               </Alert>
             )}
             <div className="flex flex-wrap gap-2">

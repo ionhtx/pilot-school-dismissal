@@ -23,7 +23,8 @@ export class ResendMagicLinkSender implements MagicLinkSender {
     if (this.apiKey === null || this.fromEmail === null) {
       throw new AuthenticationError('auth_provider_unavailable');
     }
-    const action = input.purpose === 'signup' ? 'Create your WayPass school' : 'Sign in to WayPass';
+    const action =
+      input.purpose === 'signup' ? 'Create your Pilot-SD school' : 'Sign in to Pilot-SD';
     const safeUrl = escapeHtml(input.verificationUrl);
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -36,7 +37,7 @@ export class ResendMagicLinkSender implements MagicLinkSender {
         to: [input.to],
         subject: action,
         text: `${action}: ${input.verificationUrl}\n\nThis link expires in 15 minutes and can be used once.`,
-        html: `<p>${escapeHtml(action)}</p><p><a href="${safeUrl}">Continue to WayPass</a></p><p>This link expires in 15 minutes and can be used once.</p>`,
+        html: `<p>${escapeHtml(action)}</p><p><a href="${safeUrl}">Continue to Pilot-SD</a></p><p>This link expires in 15 minutes and can be used once.</p>`,
       }),
       signal: AbortSignal.timeout(10_000),
     }).catch(() => null);
