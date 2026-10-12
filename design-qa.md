@@ -9,7 +9,7 @@
 
 ## Implementation evidence
 
-- Route: http://127.0.0.1:4173/staff
+- Route: http://127.0.0.1:4173/school
 - State: two siblings checked in by Carlos Garcia with the note “Blue Honda in lane 2”
 - Capture: full visible in-app browser viewport, 1265 x 712
 - Focused region: queue header, status counters, sibling group action, and individual pickup cards

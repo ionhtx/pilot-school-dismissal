@@ -1,11 +1,9 @@
 import { useEffect, useState, type SyntheticEvent } from 'react';
-import { Link } from 'react-router';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Building01Icon,
   DashboardSquare01Icon,
   InboxIcon,
-  Key01Icon,
   Logout01Icon,
   Tick02Icon,
   UserGroupIcon,
@@ -15,10 +13,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  parseDismissalStore,
+  rollStoreToServiceDate,
+  type CompletedEntry,
+  type DismissalRun,
+  type DismissalStore,
+  type PickupStatus,
+} from './dismissal-state';
 import './dismissal.css';
 
-type Role = 'guardian' | 'staff';
-type PickupStatus = 'waiting' | 'ready' | 'released';
+type Role = 'guardian' | 'school';
 
 interface Student {
   id: string;
@@ -28,70 +33,56 @@ interface Student {
   initials: string;
 }
 
-interface QueueEntry {
-  id: string;
-  studentId: string;
-  guardianName: string;
-  carTag: string;
-  arrivedAt: string;
-  status: PickupStatus;
-  note: string;
-}
-
-interface CompletedEntry extends QueueEntry {
-  completedAt: string;
-}
-
-interface DismissalState {
-  queue: QueueEntry[];
-  completed: CompletedEntry[];
-}
-
-const STORAGE_KEY = 'pilot-school-dismissal-v1';
+const STORAGE_KEY = 'pilot-school-dismissal-v2';
 
 const STUDENTS: [Student, ...Student[]] = [
   { id: 'mia', name: 'Mia Garcia', grade: '2nd', teacher: 'Mr. Martinez', initials: 'MG' },
   { id: 'lucas', name: 'Lucas Garcia', grade: 'K', teacher: 'Ms. Davis', initials: 'LG' },
 ];
 
-const EMPTY_STATE: DismissalState = { queue: [], completed: [] };
-
-function loadState(): DismissalState {
-  try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (!saved) return EMPTY_STATE;
-    const parsed = JSON.parse(saved) as DismissalState;
-    return {
-      queue: Array.isArray(parsed.queue) ? parsed.queue : [],
-      completed: Array.isArray(parsed.completed) ? parsed.completed : [],
-    };
-  } catch {
-    return EMPTY_STATE;
-  }
+function loadStore(): DismissalStore {
+  return parseDismissalStore(window.localStorage.getItem(STORAGE_KEY));
 }
 
 function useDismissalState() {
-  const [state, setState] = useState<DismissalState>(loadState);
+  const [store, setStore] = useState<DismissalStore>(loadStore);
 
   useEffect(() => {
-    const sync = () => {
-      setState(loadState());
+    const persist = (next: DismissalStore) => {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
     };
+    const sync = () => {
+      setStore(loadStore());
+    };
+    const checkServiceDate = () => {
+      setStore((current) => {
+        const next = rollStoreToServiceDate(current);
+        return next === current ? current : persist(next);
+      });
+    };
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
     window.addEventListener('storage', sync);
     window.addEventListener('pilot-dismissal-change', sync);
+    window.addEventListener('focus', checkServiceDate);
+    const timer = window.setInterval(checkServiceDate, 60_000);
     return () => {
       window.removeEventListener('storage', sync);
       window.removeEventListener('pilot-dismissal-change', sync);
+      window.removeEventListener('focus', checkServiceDate);
+      window.clearInterval(timer);
     };
-  }, []);
+  }, [store]);
 
-  function save(next: DismissalState) {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    setState(next);
+  function save(next: DismissalRun) {
+    const nextStore = { ...store, activeRun: next };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextStore));
+    setStore(nextStore);
     window.dispatchEvent(new Event('pilot-dismissal-change'));
   }
 
-  return { state, save };
+  return { state: store.activeRun, history: store.history, save };
 }
 
 function formatTime(value: string) {
@@ -110,32 +101,50 @@ function studentFor(id: string) {
   return STUDENTS.find((student) => student.id === id) ?? STUDENTS[0];
 }
 
-function AppHeader({ role, waiting }: { role: Role; waiting: number }) {
+function formatServiceDate(value: string) {
+  return new Intl.DateTimeFormat([], {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${value}T12:00:00.000Z`));
+}
+
+function AppHeader({
+  role,
+  waiting,
+  serviceDate,
+}: {
+  role: Role;
+  waiting: number;
+  serviceDate: string;
+}) {
+  const school = role === 'school';
   return (
-    <header className="dismissal-header">
+    <header className={`dismissal-header dismissal-header--${role}`}>
       <div className="dismissal-brand">
         <span className="dismissal-brand__mark" aria-hidden="true">
-          <HugeiconsIcon icon={Building01Icon} strokeWidth={2} />
+          <HugeiconsIcon icon={school ? Building01Icon : UserGroupIcon} strokeWidth={2} />
         </span>
         <span>
-          <strong>School Dismissal</strong>
-          <small>Oakridge Campus</small>
+          <strong>{school ? 'Oakridge School Operations' : 'Oakridge Families'}</strong>
+          <small>{school ? 'Dismissal workspace' : 'Guardian dismissal portal'}</small>
         </span>
       </div>
-      <nav className="portal-switcher" aria-label="Pilot portals">
-        <Link className={role === 'guardian' ? 'is-active' : ''} to="/guardian">
-          <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />
-          Guardian
-        </Link>
-        <Link className={role === 'staff' ? 'is-active' : ''} to="/staff">
-          <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />
-          Staff
-          {waiting > 0 ? <span>{waiting}</span> : null}
-        </Link>
-      </nav>
+      {school ? (
+        <nav className="school-navigation" aria-label="School dismissal sections">
+          <span className="is-active">
+            <HugeiconsIcon icon={DashboardSquare01Icon} strokeWidth={2} />
+            Carline
+            {waiting > 0 ? <small>{waiting}</small> : null}
+          </span>
+        </nav>
+      ) : (
+        <div className="guardian-security">Secure family access</div>
+      )}
       <div className="dismissal-window">
-        <strong>Dismissal open</strong>
-        <small>3:00–3:30 PM</small>
+        <strong>Today's dismissal</strong>
+        <small>{formatServiceDate(serviceDate)}</small>
       </div>
     </header>
   );
@@ -192,10 +201,8 @@ function GuardianPortal({ state, save }: ReturnType<typeof useDismissalState>) {
   return (
     <main className="guardian-main">
       <div className="portal-status">
-        <span className="status-dot" /> Guardian portal
-        <Link to="/staff">
-          <HugeiconsIcon icon={Key01Icon} strokeWidth={2} /> Staff console
-        </Link>
+        <span className="status-dot" /> Family pickup
+        <span className="service-date">Run date: {formatServiceDate(state.serviceDate)}</span>
       </div>
 
       <section className="identity-card">
@@ -366,7 +373,7 @@ function StaffPortal({ state, save }: ReturnType<typeof useDismissalState>) {
       }
       return [{ ...entry, status: next }];
     });
-    save({ queue, completed: [...completed, ...state.completed] });
+    save({ ...state, queue, completed: [...completed, ...state.completed] });
     setSelected([]);
   }
 
@@ -380,7 +387,7 @@ function StaffPortal({ state, save }: ReturnType<typeof useDismissalState>) {
       <div className="portal-status">
         <span className="status-dot status-dot--blue" /> Staff dismissal console
         <span>Authorized faculty access</span>
-        <Link to="/guardian">Switch to guardian portal</Link>
+        <span className="service-date">Run date: {formatServiceDate(state.serviceDate)}</span>
       </div>
 
       <section className="staff-console">
@@ -466,9 +473,6 @@ function StaffPortal({ state, save }: ReturnType<typeof useDismissalState>) {
               </span>
               <h2>No families are waiting</h2>
               <p>New guardian arrivals will appear here automatically.</p>
-              <Button nativeButton={false} variant="outline" render={<Link to="/guardian" />}>
-                Open guardian pilot
-              </Button>
             </div>
           ) : (
             active.map((entry, index) => {
@@ -563,11 +567,15 @@ export function DismissalApp({ role }: { role: Role }) {
   const store = useDismissalState();
   return (
     <div className="dismissal-app">
-      <AppHeader role={role} waiting={store.state.queue.length} />
+      <AppHeader
+        role={role}
+        waiting={store.state.queue.length}
+        serviceDate={store.state.serviceDate}
+      />
       {role === 'guardian' ? <GuardianPortal {...store} /> : <StaffPortal {...store} />}
       <footer className="dismissal-footer">
-        <span>Pilot-SD · Oakridge Elementary</span>
-        <span>Pickup records persist on this pilot device</span>
+        <span>Pilot-SD · {role === 'guardian' ? 'Family portal' : 'School operations'}</span>
+        <span>Daily run {store.state.serviceDate} · Prior days remain history only</span>
       </footer>
     </div>
   );

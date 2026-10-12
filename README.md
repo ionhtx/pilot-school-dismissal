@@ -8,9 +8,10 @@ Pilot-SD is a focused school dismissal pilot for guardians and carline staff.
 - A guardian can announce arrival for one student or a sibling group and include a pickup note.
 - Staff see arrivals in a live queue and advance students through `waiting`, `ready`, `released`, and `complete`.
 - Completed pickups remain visible in the recent dismissal history.
+- Every school-local date gets a separate run, so operational status never carries into the next day.
 - Pilot data persists in the browser so the flow can be demonstrated without external services.
 
-Open the local app at `/guardian` or `/staff`. The root route redirects to the guardian portal.
+Open the family portal at `/guardian` and the separate school workspace at `/school`. The legacy `/staff` route redirects to `/school`.
 
 ## Run locally
 

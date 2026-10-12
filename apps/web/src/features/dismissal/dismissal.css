@@ -85,44 +85,62 @@ a {
   width: 1.25rem;
   height: 1.25rem;
 }
-.portal-switcher {
+.school-navigation {
   display: flex;
   align-items: center;
-  gap: 0.2rem;
   padding: 0.22rem;
   border-radius: 0.9rem;
-  background: rgba(118, 118, 128, 0.1);
+  background: rgba(255, 255, 255, 0.12);
 }
-.portal-switcher a {
+.school-navigation span {
   min-height: 2.25rem;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   padding: 0 0.8rem;
   border-radius: 0.72rem;
-  color: var(--dismissal-muted);
+  color: white;
   font-size: 0.82rem;
   font-weight: 700;
-  text-decoration: none;
 }
-.portal-switcher a.is-active {
-  color: var(--dismissal-ink);
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-.portal-switcher svg {
+.school-navigation svg {
   width: 1rem;
   height: 1rem;
 }
-.portal-switcher a > span {
+.school-navigation small {
   min-width: 1.15rem;
   height: 1.15rem;
   display: grid;
   place-items: center;
   border-radius: 999px;
-  color: var(--dismissal-blue);
-  background: #e8f3ff;
+  color: var(--dismissal-blue-deep);
+  background: white;
   font-size: 0.7rem;
+}
+.guardian-security {
+  justify-self: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  color: #0d5c42;
+  background: #eefaf5;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+.dismissal-header--school {
+  color: white;
+  border-bottom-color: rgba(255, 255, 255, 0.16);
+  background: rgba(24, 36, 57, 0.94);
+}
+.dismissal-header--school .dismissal-brand__mark {
+  color: var(--dismissal-ink);
+  background: white;
+}
+.dismissal-header--school .dismissal-brand small,
+.dismissal-header--school .dismissal-window small {
+  color: rgba(255, 255, 255, 0.7);
+}
+.dismissal-header--school .dismissal-window strong {
+  color: #74e0b9;
 }
 .dismissal-window {
   align-items: flex-end;
@@ -151,13 +169,10 @@ a {
   font-size: 0.76rem;
   font-weight: 650;
 }
-.portal-status a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
+.portal-status .service-date {
   margin-left: auto;
-  color: var(--dismissal-blue);
-  text-decoration: none;
+  color: var(--dismissal-muted);
+  font-weight: 600;
 }
 .portal-status svg {
   width: 0.9rem;
@@ -646,7 +661,8 @@ a {
   .dismissal-header {
     grid-template-columns: 1fr auto;
   }
-  .portal-switcher {
+  .school-navigation,
+  .guardian-security {
     grid-column: 1 / -1;
     grid-row: 2;
     justify-self: center;
