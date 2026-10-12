@@ -19,7 +19,7 @@ import { Toaster } from './components/ui/sonner';
 import { TooltipProvider } from './components/ui/tooltip';
 
 const container = document.getElementById('root');
-if (container === null) throw new Error('WayPass root element is missing.');
+if (container === null) throw new Error('Pilot-SD root element is missing.');
 const root = createRoot(container);
 
 onSessionExpired(() => {
@@ -28,28 +28,13 @@ onSessionExpired(() => {
   void router.navigate(`/login?return_path=${encodeURIComponent(returnPath)}`, { replace: true });
 });
 
-const isUiReference =
-  import.meta.env.DEV && ['/__ui', '/__wayfinder'].includes(window.location.pathname);
-
-if (isUiReference) {
-  const { UIReferencePage } = await import('./design-system/reference/UIReferencePage');
-  root.render(
-    <StrictMode>
-      <TooltipProvider>
-        <UIReferencePage />
+root.render(
+  <StrictMode>
+    <TooltipProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
         <Toaster theme="light" />
-      </TooltipProvider>
-    </StrictMode>,
-  );
-} else {
-  root.render(
-    <StrictMode>
-      <TooltipProvider>
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-          <Toaster theme="light" />
-        </QueryClientProvider>
-      </TooltipProvider>
-    </StrictMode>,
-  );
-}
+      </QueryClientProvider>
+    </TooltipProvider>
+  </StrictMode>,
+);
