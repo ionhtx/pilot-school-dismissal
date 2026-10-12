@@ -73,11 +73,11 @@ export function Component() {
       gradeLevel: string | null;
     }) =>
       confirmed(
-        api.POST('/api/v1/organizations/{organizationId}/people', {
+        api.POST('/api/v1/organizations/{organizationId}/people' as never, {
           params: { path: { organizationId } },
           headers: { 'X-CSRF-Token': getCsrfToken() },
           body: input,
-        }),
+        } as never),
       ),
     onSuccess: () => {
       setCreateOpen(false);
