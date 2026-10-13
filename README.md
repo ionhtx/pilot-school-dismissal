@@ -8,6 +8,9 @@ movement policy with approvals and overrides, and destination flow with capacity
 and explicit movement execution are implemented; realtime UI remains a later phase
 (see ADR 0015 and ADR 0016).
 
+For a portable project snapshot, continuity checklist, and ready-to-use resume prompt, see
+[PROJECT_HANDOFF.md](PROJECT_HANDOFF.md).
+
 First run creates the installation through an operator bootstrap ceremony: issue a bootstrap
 grant with the operator CLI, prepare the setup draft, and complete OIDC sign-in as the founding
 administrator. See [docs/architecture.md](docs/architecture.md) and
