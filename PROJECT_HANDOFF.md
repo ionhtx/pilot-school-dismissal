@@ -208,10 +208,10 @@ trusted proxy.
   This is an unresolved access/discovery mismatch. Do not attach or modify an unrelated Supabase
   project; obtain the Pilot-SD project name/reference or connect the account/organization that owns
   it first.
-- **DNS:** the owner identified Hostinger DNS for `ionstack.dev` as available project context. The
-  authenticated Hostinger browser tab was not readable through the tools available while preparing
-  this snapshot, and the repository contains no `ionstack.dev` hostname. Therefore no production
-  hostname or DNS record is verified yet.
+- **DNS:** Hostinger contains an A record for `pilot-sd.ionstack.dev` pointing to `2.25.180.218` with
+  TTL `300`. The owner supplied the Hostinger record directly on 2026-10-13. This verifies the
+  intended hostname and DNS target; it does not by itself verify application health, TLS, the
+  deployment platform project, or that `APP_BASE_URL` currently matches it.
 
 ## Continuity checklist
 
@@ -225,8 +225,8 @@ Complete this while the original account still works:
       database backups, and secret manager.
 - [ ] Record the production URL, deployment project name, backup/restore procedure, and responsible
       owner in a private operations record (not in the public repository).
-- [ ] Identify the intended Pilot-SD hostname under `ionstack.dev`, export or privately record its
-      Hostinger DNS entries, and document the target they point to.
+- [x] Identify the intended Pilot-SD hostname and DNS target:
+      `pilot-sd.ionstack.dev` -> `2.25.180.218` (Hostinger A record, TTL `300`).
 - [ ] Rotate credentials if they were ever pasted into a chat or stored outside the secret manager.
 - [ ] In Antigravity or another coding agent, open the repository root and give it the resume prompt
       below before requesting changes.
@@ -237,7 +237,6 @@ Do not interpret old numbered “phase” language as the next work queue. The p
 Pilot-SD naming direction above are owner-confirmed. The following still require resolution:
 
 - whether a live deployment exists and, if so, its private operations/backup ownership;
-- which `ionstack.dev` hostname, if any, belongs to Pilot-SD;
 - the confirmed Pilot-SD Supabase project name/reference and owning account/organization;
 - the path and evidence required before any real student data is allowed;
 
